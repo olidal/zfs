@@ -365,7 +365,19 @@ range_tree_remove_impl(range_tree_t *rt, uint64_t start, uint64_t size,
 	uint64_t end = start + size;
 	boolean_t left_over, right_over;
 
-	VERIFY3U(size, !=, 0);
+	/*
+	 * Turn this into a recoverable error.
+	 * Requesting a null size allocation is certainly wrong, but there is a chance it
+	 * only happens after a test was skipped somewhere that would have prevented to 
+	 * call this function.
+	 */
+	/* VERIFY3U(size, !=, 0); */
+	if ( size == 0 ) {
+		zfs_panic_recover("zfs: freeing 0-sized segment "
+						  "(offset=%llu size=%llu)",
+						  (longlong_t)start, (longlong_t)size);
+		return;
+	}
 	VERIFY3U(size, <=, rt->rt_space);
 
 	rsearch.rs_start = start;
